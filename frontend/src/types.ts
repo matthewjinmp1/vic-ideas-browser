@@ -103,6 +103,17 @@ export interface BenchmarkIndexRow {
   computed_at: string;
 }
 
+export interface Sp500TotalReturnRow {
+  date: string;
+  period: string;
+  index_value: number;
+  normalized_value: number;
+  period_return_pct: number | null;
+  cumulative_return_pct: number;
+  source: string;
+  computed_at: string;
+}
+
 export interface IdeaListParams {
   skip: number;
   limit: number;

@@ -7,8 +7,17 @@ import {
   getIdeas,
   getIdeasCount,
   getIdeasExport,
+  getSp500TotalReturnExport,
 } from './api';
-import { BenchmarkIndexRow, Idea, IdeaDetail, IdeaExportRow, Performance, TotalReturn } from './types';
+import {
+  BenchmarkIndexRow,
+  Idea,
+  IdeaDetail,
+  IdeaExportRow,
+  Performance,
+  Sp500TotalReturnRow,
+  TotalReturn,
+} from './types';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 const DEFAULT_PAGE_SIZE = 50;
@@ -109,6 +118,17 @@ const BENCHMARK_EXPORT_COLUMNS: Array<[keyof BenchmarkIndexRow, string]> = [
   ['calculation_note', 'Calculation Note'],
 ];
 
+const SP500_EXPORT_COLUMNS: Array<[keyof Sp500TotalReturnRow, string]> = [
+  ['date', 'Date'],
+  ['period', 'Period'],
+  ['index_value', 'S&P 500 TR Index Value'],
+  ['normalized_value', 'Normalized Value'],
+  ['period_return_pct', 'Period Return %'],
+  ['cumulative_return_pct', 'Cumulative Return %'],
+  ['source', 'Source'],
+  ['computed_at', 'Fetched At'],
+];
+
 function Header() {
   return (
     <header className="shell-header">
@@ -186,6 +206,8 @@ function IdeasPage() {
   const [state, setState] = useState<LoadState<{ ideas: Idea[]; total: number }>>({ status: 'loading' });
   const [copyState, setCopyState] = useState<LoadState<number> | { status: 'idle' }>({ status: 'idle' });
   const [benchmarkCopyState, setBenchmarkCopyState] =
+    useState<LoadState<number> | { status: 'idle' }>({ status: 'idle' });
+  const [sp500CopyState, setSp500CopyState] =
     useState<LoadState<number> | { status: 'idle' }>({ status: 'idle' });
 
   const skip = (page - 1) * pageSize;
@@ -280,6 +302,21 @@ function IdeasPage() {
     }
   }
 
+  async function copySp500ForSheets() {
+    setSp500CopyState({ status: 'loading' });
+
+    try {
+      const rows = await getSp500TotalReturnExport();
+      await writeClipboard(toSp500Tsv(rows));
+      setSp500CopyState({ status: 'ready', data: rows.length });
+    } catch (error) {
+      setSp500CopyState({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Could not copy S&P 500 data',
+      });
+    }
+  }
+
   return (
     <section className="ideas-page">
       <div className="page-heading">
@@ -333,6 +370,14 @@ function IdeasPage() {
         >
           {benchmarkCopyState.status === 'loading' ? 'Copying...' : 'Copy Benchmark'}
         </button>
+        <button
+          className="copy-button secondary"
+          type="button"
+          onClick={copySp500ForSheets}
+          disabled={sp500CopyState.status === 'loading'}
+        >
+          {sp500CopyState.status === 'loading' ? 'Copying...' : 'Copy S&P 500 TR'}
+        </button>
       </div>
 
       {copyState.status === 'ready' && (
@@ -349,6 +394,16 @@ function IdeasPage() {
       {benchmarkCopyState.status === 'error' && (
         <div className="copy-status error">
           Could not copy benchmark: {benchmarkCopyState.error}
+        </div>
+      )}
+      {sp500CopyState.status === 'ready' && (
+        <div className="copy-status">
+          Copied {sp500CopyState.data.toLocaleString()} S&P 500 total return rows to clipboard.
+        </div>
+      )}
+      {sp500CopyState.status === 'error' && (
+        <div className="copy-status error">
+          Could not copy S&P 500 data: {sp500CopyState.error}
         </div>
       )}
 
@@ -430,6 +485,15 @@ function toBenchmarkTsv(rows: BenchmarkIndexRow[]) {
   const header = BENCHMARK_EXPORT_COLUMNS.map(([, label]) => label).join('\t');
   const body = rows.map((row) =>
     BENCHMARK_EXPORT_COLUMNS.map(([key]) => formatExportValue(key, row[key])).join('\t'),
+  );
+
+  return [header, ...body].join('\n');
+}
+
+function toSp500Tsv(rows: Sp500TotalReturnRow[]) {
+  const header = SP500_EXPORT_COLUMNS.map(([, label]) => label).join('\t');
+  const body = rows.map((row) =>
+    SP500_EXPORT_COLUMNS.map(([key]) => formatExportValue(key, row[key])).join('\t'),
   );
 
   return [header, ...body].join('\n');

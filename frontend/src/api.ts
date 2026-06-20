@@ -1,4 +1,11 @@
-import { BenchmarkIndexRow, Idea, IdeaDetail, IdeaExportRow, IdeaListParams } from './types';
+import {
+  BenchmarkIndexRow,
+  Idea,
+  IdeaDetail,
+  IdeaExportRow,
+  IdeaListParams,
+  Sp500TotalReturnRow,
+} from './types';
 
 const API_BASE = '/api';
 
@@ -59,4 +66,8 @@ export async function getIdeasExport(searchTerm?: string) {
 
 export async function getBenchmarkIndexExport() {
   return request<BenchmarkIndexRow[]>('/benchmarks/quickfs-index/export');
+}
+
+export async function getSp500TotalReturnExport() {
+  return request<Sp500TotalReturnRow[]>('/benchmarks/sp500-total-return/export');
 }

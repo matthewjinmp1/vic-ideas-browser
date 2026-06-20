@@ -17,6 +17,7 @@ from api.schemas import (
     PerformanceResponse,
     IdeaExportRow,
     BenchmarkIndexRow,
+    Sp500TotalReturnRow,
 )
 
 router = APIRouter()
@@ -353,6 +354,29 @@ def export_quickfs_index(db: Session = Depends(get_db)):
         return [BenchmarkIndexRow(**row) for row in rows]
     except Exception as e:
         print(f"Error in export_quickfs_index: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.get("/benchmarks/sp500-total-return/export", response_model=List[Sp500TotalReturnRow])
+def export_sp500_total_return(db: Session = Depends(get_db)):
+    """
+    Return the S&P 500 Total Return Index monthly series for spreadsheets.
+    """
+    try:
+        rows = db.execute(
+            text(
+                """
+                SELECT date, period, index_value, normalized_value,
+                       period_return_pct, cumulative_return_pct, source, computed_at
+                FROM sp500_total_return_index
+                ORDER BY date
+                """
+            )
+        ).mappings().all()
+
+        return [Sp500TotalReturnRow(**row) for row in rows]
+    except Exception as e:
+        print(f"Error in export_sp500_total_return: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 

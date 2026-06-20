@@ -102,6 +102,18 @@ class BenchmarkIndexRow(BaseModel):
     computed_at: str
 
 
+class Sp500TotalReturnRow(BaseModel):
+    """S&P 500 Total Return Index row for spreadsheet export."""
+    date: str
+    period: str
+    index_value: float
+    normalized_value: float
+    period_return_pct: Optional[float] = None
+    cumulative_return_pct: float
+    source: str
+    computed_at: str
+
+
 class DescriptionResponse(BaseModel):
     """Description of an investment idea."""
     description: str
