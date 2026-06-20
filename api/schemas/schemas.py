@@ -47,7 +47,7 @@ class TotalReturnResponse(BaseModel):
     dividends: float
     stock_total_return_pct: float
     idea_total_return_pct: float
-    annualized_idea_return_pct: float
+    annualized_idea_return_pct: Optional[float] = None
     benchmark_total_return_pct: Optional[float] = None
     benchmark_annualized_return_pct: Optional[float] = None
     excess_total_return_pct: Optional[float] = None

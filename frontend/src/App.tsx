@@ -604,7 +604,7 @@ function ReadableText({ text, empty }: { text?: string; empty: string }) {
 }
 
 function ReturnPill({ totalReturn }: { totalReturn?: TotalReturn | null }) {
-  if (!totalReturn) {
+  if (!totalReturn || totalReturn.annualized_idea_return_pct == null) {
     return <div className="return-pill empty">n/a</div>;
   }
 
@@ -632,8 +632,16 @@ function TotalReturnPanel({ totalReturn }: { totalReturn?: TotalReturn | null })
     <div className="return-panel">
       <div className="return-hero">
         <span>Annual idea return</span>
-        <strong className={totalReturn.annualized_idea_return_pct >= 0 ? 'positive' : 'negative'}>
-          {formatPercent(totalReturn.annualized_idea_return_pct)}
+        <strong
+          className={
+            totalReturn.annualized_idea_return_pct == null
+              ? undefined
+              : totalReturn.annualized_idea_return_pct >= 0
+                ? 'positive'
+                : 'negative'
+          }
+        >
+          {formatMaybePercent(totalReturn.annualized_idea_return_pct)}
         </strong>
       </div>
       <dl className="return-facts">

@@ -113,10 +113,22 @@ def calculate_return(series, start):
     }
 
 
+def compound_annual_return(total_return_pct, years_held):
+    if years_held <= 0:
+        return None
+
+    growth_factor = 1 + total_return_pct / 100
+    if growth_factor <= 0:
+        return None
+
+    return (growth_factor ** (1 / years_held) - 1) * 100
+
+
 def ensure_table(conn):
+    conn.execute("DROP TABLE IF EXISTS idea_total_returns")
     conn.execute(
         """
-        CREATE TABLE IF NOT EXISTS idea_total_returns (
+        CREATE TABLE idea_total_returns (
             idea_id TEXT NOT NULL PRIMARY KEY,
             ticker TEXT NOT NULL,
             matched_ticker TEXT NOT NULL,
@@ -127,7 +139,7 @@ def ensure_table(conn):
             dividends REAL NOT NULL,
             stock_total_return_pct REAL NOT NULL,
             idea_total_return_pct REAL NOT NULL,
-            annualized_idea_return_pct REAL NOT NULL,
+            annualized_idea_return_pct REAL,
             periods_held INTEGER NOT NULL,
             calculation_note TEXT NOT NULL,
             computed_at TEXT NOT NULL
@@ -139,14 +151,6 @@ def ensure_table(conn):
         "CREATE INDEX IF NOT EXISTS idx_idea_total_returns_idea_return "
         "ON idea_total_returns(idea_total_return_pct)"
     )
-    columns = {
-        row[1] for row in conn.execute("PRAGMA table_info(idea_total_returns)").fetchall()
-    }
-    if "annualized_idea_return_pct" not in columns:
-        conn.execute(
-            "ALTER TABLE idea_total_returns "
-            "ADD COLUMN annualized_idea_return_pct REAL NOT NULL DEFAULT 0"
-        )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_idea_total_returns_annualized_return "
         "ON idea_total_returns(annualized_idea_return_pct)"
@@ -173,7 +177,7 @@ def main():
     computed_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     note = (
         "Approximate return from local QuickFS quarter-end prices plus dividends; "
-        "annual return is total idea return divided by years held."
+        "annual return is compounded CAGR when the directional return has a positive growth factor."
     )
     rows = []
     missing_ticker = missing_start = stale = 0
@@ -196,7 +200,7 @@ def main():
         stock_return = result["stock_total_return_pct"]
         idea_return = -stock_return if bool(is_short) else stock_return
         years_held = result["periods_held"] / 4
-        annualized_return = idea_return / years_held
+        annualized_return = compound_annual_return(idea_return, years_held)
         rows.append(
             (
                 idea_id,

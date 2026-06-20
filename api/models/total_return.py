@@ -17,7 +17,7 @@ class IdeaTotalReturn(Base):
     dividends: Mapped[float] = mapped_column(Float, nullable=False)
     stock_total_return_pct: Mapped[float] = mapped_column(Float, nullable=False)
     idea_total_return_pct: Mapped[float] = mapped_column(Float, nullable=False)
-    annualized_idea_return_pct: Mapped[float] = mapped_column(Float, nullable=False)
+    annualized_idea_return_pct: Mapped[float] = mapped_column(Float, nullable=True)
     benchmark_total_return_pct: Mapped[float] = mapped_column(Float, nullable=True)
     benchmark_annualized_return_pct: Mapped[float] = mapped_column(Float, nullable=True)
     excess_total_return_pct: Mapped[float] = mapped_column(Float, nullable=True)

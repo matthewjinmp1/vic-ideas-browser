@@ -36,6 +36,17 @@ def value_at_or_before(periods, values, period):
     return values[index]
 
 
+def compound_annual_return(total_return_pct, years_held):
+    if years_held <= 0:
+        return None
+
+    growth_factor = 1 + total_return_pct / 100
+    if growth_factor <= 0:
+        return None
+
+    return (growth_factor ** (1 / years_held) - 1) * 100
+
+
 def ensure_columns(conn):
     columns = {
         row[1] for row in conn.execute("PRAGMA table_info(idea_total_returns)").fetchall()
@@ -86,13 +97,19 @@ def main():
             continue
 
         benchmark_total = (end_value / start_value - 1) * 100
-        benchmark_annual = benchmark_total / (periods_held / 4)
+        years_held = periods_held / 4
+        benchmark_annual = compound_annual_return(benchmark_total, years_held)
+        excess_annual = (
+            None
+            if idea_annual_return is None or benchmark_annual is None
+            else idea_annual_return - benchmark_annual
+        )
         updates.append(
             (
                 benchmark_total,
                 benchmark_annual,
                 idea_total_return - benchmark_total,
-                idea_annual_return - benchmark_annual,
+                excess_annual,
                 idea_id,
             )
         )

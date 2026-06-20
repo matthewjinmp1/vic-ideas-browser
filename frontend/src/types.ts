@@ -33,7 +33,7 @@ export interface TotalReturn {
   dividends: number;
   stock_total_return_pct: number;
   idea_total_return_pct: number;
-  annualized_idea_return_pct: number;
+  annualized_idea_return_pct: number | null;
   benchmark_total_return_pct: number | null;
   benchmark_annualized_return_pct: number | null;
   excess_total_return_pct: number | null;
