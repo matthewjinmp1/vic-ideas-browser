@@ -8,7 +8,7 @@ from typing import List, Optional
 from datetime import date
 
 from api.database import get_db
-from api.models import Idea, Description, Catalysts, Performance
+from api.models import Idea, Description, Catalysts, Performance, Company, User
 from api.schemas import (
     IdeaResponse,
     IdeaDetailResponse,
@@ -30,6 +30,7 @@ def get_ideas(
     is_contest_winner: Optional[bool] = None,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
+    search: Optional[str] = None,
     has_performance: Optional[bool] = None,
     min_performance: Optional[float] = None,
     max_performance: Optional[float] = None,
@@ -43,7 +44,11 @@ def get_ideas(
     """
     try:
         # Start with a query on Idea
-        query = db.query(Idea)
+        query = db.query(Idea).options(
+            joinedload(Idea.company),
+            joinedload(Idea.user),
+            joinedload(Idea.performance),
+        )
         
         # Determine if we need to join with Performance table
         needs_performance_join = (
@@ -56,6 +61,22 @@ def get_ideas(
         # Join with Performance if needed for filtering or sorting
         if needs_performance_join:
             query = query.outerjoin(Performance, Idea.id == Performance.idea_id)
+
+        if search:
+            search_term = f"%{search}%"
+            query = (
+                query.outerjoin(Company, Idea.company_id == Company.ticker)
+                .outerjoin(User, Idea.user_id == User.user_link)
+                .outerjoin(Description, Idea.id == Description.idea_id)
+                .filter(
+                    or_(
+                        Idea.company_id.ilike(search_term),
+                        Company.company_name.ilike(search_term),
+                        User.username.ilike(search_term),
+                        Description.description.ilike(search_term),
+                    )
+                )
+            )
         
         # Apply basic filters
         if company_id:
@@ -154,6 +175,46 @@ def get_ideas(
         return result
     except Exception as e:
         print(f"Error in get_ideas: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.get("/ideas/count")
+def get_ideas_count(
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Count ideas for pagination. Mirrors the lightweight search used by the frontend.
+    """
+    try:
+        query = db.query(func.count(Idea.id))
+
+        if search:
+            search_term = f"%{search}%"
+            query = (
+                query.outerjoin(Company, Idea.company_id == Company.ticker)
+                .outerjoin(User, Idea.user_id == User.user_link)
+                .outerjoin(Description, Idea.id == Description.idea_id)
+                .filter(
+                    or_(
+                        Idea.company_id.ilike(search_term),
+                        Company.company_name.ilike(search_term),
+                        User.username.ilike(search_term),
+                        Description.description.ilike(search_term),
+                    )
+                )
+            )
+
+        total = (
+            query.filter(Idea.id.isnot(None))
+            .filter(Idea.company_id.isnot(None))
+            .filter(Idea.user_id.isnot(None))
+            .filter(Idea.date.isnot(None))
+            .scalar()
+        )
+        return {"total": total or 0}
+    except Exception as e:
+        print(f"Error in get_ideas_count: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 

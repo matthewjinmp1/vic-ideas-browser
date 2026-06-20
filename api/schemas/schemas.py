@@ -74,6 +74,9 @@ class IdeaResponse(BaseModel):
     date: datetime
     is_short: bool
     is_contest_winner: bool
+    company: Optional[CompanyResponse] = None
+    user: Optional[UserResponse] = None
+    performance: Optional[PerformanceResponse] = None
 
     model_config = {"from_attributes": True}
 
