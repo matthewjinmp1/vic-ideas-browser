@@ -81,20 +81,7 @@ def get_ideas(
             query = query.outerjoin(Performance, Idea.id == Performance.idea_id)
 
         if search:
-            search_term = f"%{search}%"
-            query = (
-                query.outerjoin(Company, Idea.company_id == Company.ticker)
-                .outerjoin(User, Idea.user_id == User.user_link)
-                .outerjoin(Description, Idea.id == Description.idea_id)
-                .filter(
-                    or_(
-                        Idea.company_id.ilike(search_term),
-                        Company.company_name.ilike(search_term),
-                        User.username.ilike(search_term),
-                        Description.description.ilike(search_term),
-                    )
-                )
-            )
+            query = query.filter(Idea.company_id.ilike(f"{search}%"))
         
         # Apply basic filters
         if company_id:
@@ -209,20 +196,7 @@ def get_ideas_count(
         query = db.query(func.count(Idea.id))
 
         if search:
-            search_term = f"%{search}%"
-            query = (
-                query.outerjoin(Company, Idea.company_id == Company.ticker)
-                .outerjoin(User, Idea.user_id == User.user_link)
-                .outerjoin(Description, Idea.id == Description.idea_id)
-                .filter(
-                    or_(
-                        Idea.company_id.ilike(search_term),
-                        Company.company_name.ilike(search_term),
-                        User.username.ilike(search_term),
-                        Description.description.ilike(search_term),
-                    )
-                )
-            )
+            query = query.filter(Idea.company_id.ilike(f"{search}%"))
 
         total = (
             query.filter(Idea.id.isnot(None))
@@ -254,18 +228,7 @@ def export_ideas(
         )
 
         if search:
-            search_term = f"%{search}%"
-            query = (
-                query.outerjoin(Description, Idea.id == Description.idea_id)
-                .filter(
-                    or_(
-                        Idea.company_id.ilike(search_term),
-                        Company.company_name.ilike(search_term),
-                        User.username.ilike(search_term),
-                        Description.description.ilike(search_term),
-                    )
-                )
-            )
+            query = query.filter(Idea.company_id.ilike(f"{search}%"))
 
         rows = (
             query.filter(Idea.id.isnot(None))

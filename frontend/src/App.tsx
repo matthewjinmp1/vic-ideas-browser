@@ -298,7 +298,7 @@ function IdeasPage() {
               id="idea-search"
               value={draftQuery}
               onChange={(event) => setDraftQuery(event.target.value)}
-              placeholder="Ticker, company, author, text"
+              placeholder="Ticker prefix"
             />
             <button type="submit">Search</button>
           </div>
