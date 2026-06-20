@@ -34,6 +34,11 @@ export interface TotalReturn {
   stock_total_return_pct: number;
   idea_total_return_pct: number;
   annualized_idea_return_pct: number;
+  benchmark_total_return_pct: number | null;
+  benchmark_annualized_return_pct: number | null;
+  excess_total_return_pct: number | null;
+  excess_annualized_return_pct: number | null;
+  benchmark_constituents: number | null;
   periods_held: number;
   calculation_note: string;
   computed_at: string;
@@ -71,6 +76,11 @@ export interface IdeaExportRow {
   annual_idea_return_pct: number | null;
   total_idea_return_pct: number | null;
   stock_total_return_pct: number | null;
+  benchmark_annual_return_pct: number | null;
+  benchmark_total_return_pct: number | null;
+  excess_annual_return_pct: number | null;
+  excess_total_return_pct: number | null;
+  benchmark_constituents: number | null;
   start_period: string | null;
   end_period: string | null;
   start_price: number | null;

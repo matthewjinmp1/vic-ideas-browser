@@ -68,8 +68,13 @@ const EXPORT_COLUMNS: Array<[keyof IdeaExportRow, string]> = [
   ['date', 'Date'],
   ['side', 'Long/Short'],
   ['annual_idea_return_pct', 'Annual Idea Return %'],
+  ['benchmark_annual_return_pct', 'Benchmark Annual Return %'],
+  ['excess_annual_return_pct', 'Excess Annual Return %'],
   ['total_idea_return_pct', 'Total Idea Return %'],
+  ['benchmark_total_return_pct', 'Benchmark Total Return %'],
+  ['excess_total_return_pct', 'Excess Total Return %'],
   ['stock_total_return_pct', 'Stock Total Return %'],
+  ['benchmark_constituents', 'Benchmark Constituents'],
   ['matched_ticker', 'QuickFS Matched Ticker'],
   ['start_period', 'Start Period'],
   ['end_period', 'End Period'],
@@ -565,8 +570,24 @@ function TotalReturnPanel({ totalReturn }: { totalReturn?: TotalReturn | null })
       </div>
       <dl className="return-facts">
         <div>
+          <dt>Benchmark annual</dt>
+          <dd>{formatMaybePercent(totalReturn.benchmark_annualized_return_pct)}</dd>
+        </div>
+        <div>
+          <dt>Excess annual</dt>
+          <dd>{formatMaybePercent(totalReturn.excess_annualized_return_pct)}</dd>
+        </div>
+        <div>
           <dt>Total idea return</dt>
           <dd>{formatPercent(totalReturn.idea_total_return_pct)}</dd>
+        </div>
+        <div>
+          <dt>Benchmark total</dt>
+          <dd>{formatMaybePercent(totalReturn.benchmark_total_return_pct)}</dd>
+        </div>
+        <div>
+          <dt>Excess total</dt>
+          <dd>{formatMaybePercent(totalReturn.excess_total_return_pct)}</dd>
         </div>
         <div>
           <dt>Stock return</dt>
@@ -575,6 +596,10 @@ function TotalReturnPanel({ totalReturn }: { totalReturn?: TotalReturn | null })
         <div>
           <dt>Years held</dt>
           <dd>{formatYears(totalReturn.periods_held)}</dd>
+        </div>
+        <div>
+          <dt>Benchmark constituents</dt>
+          <dd>{totalReturn.benchmark_constituents?.toLocaleString() || 'n/a'}</dd>
         </div>
         <div>
           <dt>Start</dt>
@@ -641,6 +666,10 @@ function formatPerformance(value: number | null | undefined, isShort: boolean) {
 function formatPercent(value: number) {
   const sign = value > 0 ? '+' : '';
   return `${sign}${value.toFixed(1)}%`;
+}
+
+function formatMaybePercent(value: number | null | undefined) {
+  return value == null ? 'n/a' : formatPercent(value);
 }
 
 function formatMoney(value: number) {

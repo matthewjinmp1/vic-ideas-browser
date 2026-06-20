@@ -48,6 +48,11 @@ class TotalReturnResponse(BaseModel):
     stock_total_return_pct: float
     idea_total_return_pct: float
     annualized_idea_return_pct: float
+    benchmark_total_return_pct: Optional[float] = None
+    benchmark_annualized_return_pct: Optional[float] = None
+    excess_total_return_pct: Optional[float] = None
+    excess_annualized_return_pct: Optional[float] = None
+    benchmark_constituents: Optional[int] = None
     periods_held: int
     calculation_note: str
     computed_at: str
@@ -69,6 +74,11 @@ class IdeaExportRow(BaseModel):
     annual_idea_return_pct: Optional[float] = None
     total_idea_return_pct: Optional[float] = None
     stock_total_return_pct: Optional[float] = None
+    benchmark_annual_return_pct: Optional[float] = None
+    benchmark_total_return_pct: Optional[float] = None
+    excess_annual_return_pct: Optional[float] = None
+    excess_total_return_pct: Optional[float] = None
+    benchmark_constituents: Optional[int] = None
     start_period: Optional[str] = None
     end_period: Optional[str] = None
     start_price: Optional[float] = None

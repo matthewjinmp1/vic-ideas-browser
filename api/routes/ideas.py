@@ -297,6 +297,21 @@ def export_ideas(
                     stock_total_return_pct=(
                         total_return.stock_total_return_pct if total_return else None
                     ),
+                    benchmark_annual_return_pct=(
+                        total_return.benchmark_annualized_return_pct if total_return else None
+                    ),
+                    benchmark_total_return_pct=(
+                        total_return.benchmark_total_return_pct if total_return else None
+                    ),
+                    excess_annual_return_pct=(
+                        total_return.excess_annualized_return_pct if total_return else None
+                    ),
+                    excess_total_return_pct=(
+                        total_return.excess_total_return_pct if total_return else None
+                    ),
+                    benchmark_constituents=(
+                        total_return.benchmark_constituents if total_return else None
+                    ),
                     start_period=total_return.start_period if total_return else None,
                     end_period=total_return.end_period if total_return else None,
                     start_price=total_return.start_price if total_return else None,
