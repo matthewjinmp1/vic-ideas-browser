@@ -17,6 +17,7 @@ class IdeaTotalReturn(Base):
     dividends: Mapped[float] = mapped_column(Float, nullable=False)
     stock_total_return_pct: Mapped[float] = mapped_column(Float, nullable=False)
     idea_total_return_pct: Mapped[float] = mapped_column(Float, nullable=False)
+    annualized_idea_return_pct: Mapped[float] = mapped_column(Float, nullable=False)
     periods_held: Mapped[int] = mapped_column(Integer, nullable=False)
     calculation_note: Mapped[str] = mapped_column(String, nullable=False)
     computed_at: Mapped[str] = mapped_column(String, nullable=False)

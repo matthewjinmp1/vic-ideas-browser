@@ -127,6 +127,7 @@ def ensure_table(conn):
             dividends REAL NOT NULL,
             stock_total_return_pct REAL NOT NULL,
             idea_total_return_pct REAL NOT NULL,
+            annualized_idea_return_pct REAL NOT NULL,
             periods_held INTEGER NOT NULL,
             calculation_note TEXT NOT NULL,
             computed_at TEXT NOT NULL
@@ -137,6 +138,18 @@ def ensure_table(conn):
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_idea_total_returns_idea_return "
         "ON idea_total_returns(idea_total_return_pct)"
+    )
+    columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(idea_total_returns)").fetchall()
+    }
+    if "annualized_idea_return_pct" not in columns:
+        conn.execute(
+            "ALTER TABLE idea_total_returns "
+            "ADD COLUMN annualized_idea_return_pct REAL NOT NULL DEFAULT 0"
+        )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_idea_total_returns_annualized_return "
+        "ON idea_total_returns(annualized_idea_return_pct)"
     )
 
 
@@ -158,7 +171,10 @@ def main():
     ).fetchall()
 
     computed_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    note = "Approximate total return from local QuickFS quarter-end prices plus dividends."
+    note = (
+        "Approximate return from local QuickFS quarter-end prices plus dividends; "
+        "annual return is total idea return divided by years held."
+    )
     rows = []
     missing_ticker = missing_start = stale = 0
 
@@ -179,6 +195,8 @@ def main():
         result = calculate_return(series, start)
         stock_return = result["stock_total_return_pct"]
         idea_return = -stock_return if bool(is_short) else stock_return
+        years_held = result["periods_held"] / 4
+        annualized_return = idea_return / years_held
         rows.append(
             (
                 idea_id,
@@ -191,6 +209,7 @@ def main():
                 result["dividends"],
                 stock_return,
                 idea_return,
+                annualized_return,
                 result["periods_held"],
                 note,
                 computed_at,
@@ -202,9 +221,10 @@ def main():
         INSERT INTO idea_total_returns (
             idea_id, ticker, matched_ticker, start_period, end_period,
             start_price, end_price, dividends, stock_total_return_pct,
-            idea_total_return_pct, periods_held, calculation_note, computed_at
+            idea_total_return_pct, annualized_idea_return_pct, periods_held,
+            calculation_note, computed_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         rows,
     )

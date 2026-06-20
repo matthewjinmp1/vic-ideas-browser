@@ -433,12 +433,12 @@ function ReturnPill({ totalReturn }: { totalReturn?: TotalReturn | null }) {
     return <div className="return-pill empty">n/a</div>;
   }
 
-  const value = totalReturn.idea_total_return_pct;
+  const value = totalReturn.annualized_idea_return_pct;
   const className = value >= 0 ? 'positive' : 'negative';
 
   return (
     <div className={`return-pill ${className}`}>
-      <span>Return</span>
+      <span>Annual</span>
       <strong>{formatPercent(value)}</strong>
     </div>
   );
@@ -456,15 +456,23 @@ function TotalReturnPanel({ totalReturn }: { totalReturn?: TotalReturn | null })
   return (
     <div className="return-panel">
       <div className="return-hero">
-        <span>Idea return</span>
-        <strong className={totalReturn.idea_total_return_pct >= 0 ? 'positive' : 'negative'}>
-          {formatPercent(totalReturn.idea_total_return_pct)}
+        <span>Annual idea return</span>
+        <strong className={totalReturn.annualized_idea_return_pct >= 0 ? 'positive' : 'negative'}>
+          {formatPercent(totalReturn.annualized_idea_return_pct)}
         </strong>
       </div>
       <dl className="return-facts">
         <div>
+          <dt>Total idea return</dt>
+          <dd>{formatPercent(totalReturn.idea_total_return_pct)}</dd>
+        </div>
+        <div>
           <dt>Stock return</dt>
           <dd>{formatPercent(totalReturn.stock_total_return_pct)}</dd>
+        </div>
+        <div>
+          <dt>Years held</dt>
+          <dd>{formatYears(totalReturn.periods_held)}</dd>
         </div>
         <div>
           <dt>Start</dt>
@@ -539,6 +547,10 @@ function formatMoney(value: number) {
     currency: 'USD',
     maximumFractionDigits: value >= 100 ? 2 : 3,
   }).format(value);
+}
+
+function formatYears(periodsHeld: number) {
+  return `${(periodsHeld / 4).toFixed(1)} years`;
 }
 
 export default App;

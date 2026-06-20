@@ -47,6 +47,7 @@ class TotalReturnResponse(BaseModel):
     dividends: float
     stock_total_return_pct: float
     idea_total_return_pct: float
+    annualized_idea_return_pct: float
     periods_held: int
     calculation_note: str
     computed_at: str

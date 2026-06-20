@@ -33,6 +33,7 @@ export interface TotalReturn {
   dividends: number;
   stock_total_return_pct: number;
   idea_total_return_pct: number;
+  annualized_idea_return_pct: number;
   periods_held: number;
   calculation_note: string;
   computed_at: string;
