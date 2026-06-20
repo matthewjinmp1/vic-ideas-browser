@@ -4,18 +4,12 @@ Fixtures for API integration tests.
 import pytest
 import os
 import sys
-from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 # Add the root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
-# Import models and app
-from ValueInvestorsClub.ValueInvestorsClub.models.Base import Base
-from api.main import app 
-from api.database import get_db
 
 # Use in-memory SQLite for tests
 @pytest.fixture(scope="session")
@@ -30,6 +24,8 @@ def engine():
 @pytest.fixture(scope="function")
 def db_session(engine):
     """Create a new database session for a test."""
+    from ValueInvestorsClub.ValueInvestorsClub.models.Base import Base
+
     # Create tables
     Base.metadata.create_all(engine)
     
@@ -47,6 +43,10 @@ def db_session(engine):
 @pytest.fixture(scope="function")
 def client(db_session):
     """Create a test client for the FastAPI app."""
+    from fastapi.testclient import TestClient
+    from api.main import app
+    from api.database import get_db
+
     def override_get_db():
         try:
             yield db_session
