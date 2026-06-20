@@ -38,7 +38,6 @@ export interface TotalReturn {
   benchmark_annualized_return_pct: number | null;
   excess_total_return_pct: number | null;
   excess_annualized_return_pct: number | null;
-  benchmark_constituents: number | null;
   periods_held: number;
   calculation_note: string;
   computed_at: string;
@@ -80,7 +79,6 @@ export interface IdeaExportRow {
   benchmark_total_return_pct: number | null;
   excess_annual_return_pct: number | null;
   excess_total_return_pct: number | null;
-  benchmark_constituents: number | null;
   start_period: string | null;
   end_period: string | null;
   start_price: number | null;
@@ -88,19 +86,6 @@ export interface IdeaExportRow {
   dividends: number | null;
   years_held: number | null;
   vic_link: string | null;
-}
-
-export interface BenchmarkIndexRow {
-  period: string;
-  index_value: number;
-  period_return_pct: number;
-  cumulative_return_pct: number;
-  winsorized_index_value: number;
-  winsorized_period_return_pct: number;
-  winsorized_cumulative_return_pct: number;
-  constituents: number;
-  calculation_note: string;
-  computed_at: string;
 }
 
 export interface Sp500TotalReturnRow {

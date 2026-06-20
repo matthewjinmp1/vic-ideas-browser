@@ -2,7 +2,6 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   checkHealth,
-  getBenchmarkIndexExport,
   getIdea,
   getIdeas,
   getIdeasCount,
@@ -10,7 +9,6 @@ import {
   getSp500TotalReturnExport,
 } from './api';
 import {
-  BenchmarkIndexRow,
   Idea,
   IdeaDetail,
   IdeaExportRow,
@@ -84,13 +82,12 @@ const EXPORT_COLUMNS: Array<[keyof IdeaExportRow, string]> = [
   ['date', 'Date'],
   ['side', 'Long/Short'],
   ['annual_idea_return_pct', 'Annual Idea Return %'],
-  ['benchmark_annual_return_pct', 'Benchmark Annual Return %'],
+  ['benchmark_annual_return_pct', 'S&P 500 TR Annual Return %'],
   ['excess_annual_return_pct', 'Excess Annual Return %'],
   ['total_idea_return_pct', 'Total Idea Return %'],
-  ['benchmark_total_return_pct', 'Benchmark Total Return %'],
+  ['benchmark_total_return_pct', 'S&P 500 TR Total Return %'],
   ['excess_total_return_pct', 'Excess Total Return %'],
   ['stock_total_return_pct', 'Stock Total Return %'],
-  ['benchmark_constituents', 'Benchmark Constituents'],
   ['matched_ticker', 'QuickFS Matched Ticker'],
   ['start_period', 'Start Period'],
   ['end_period', 'End Period'],
@@ -103,19 +100,6 @@ const EXPORT_COLUMNS: Array<[keyof IdeaExportRow, string]> = [
   ['is_contest_winner', 'Contest Winner'],
   ['vic_link', 'VIC Link'],
   ['idea_id', 'Idea ID'],
-];
-
-const BENCHMARK_EXPORT_COLUMNS: Array<[keyof BenchmarkIndexRow, string]> = [
-  ['period', 'Period'],
-  ['index_value', 'Index Value'],
-  ['period_return_pct', 'Period Return %'],
-  ['cumulative_return_pct', 'Cumulative Return %'],
-  ['winsorized_index_value', 'Winsorized Index Value'],
-  ['winsorized_period_return_pct', 'Winsorized Period Return %'],
-  ['winsorized_cumulative_return_pct', 'Winsorized Cumulative Return %'],
-  ['constituents', 'Constituents'],
-  ['computed_at', 'Computed At'],
-  ['calculation_note', 'Calculation Note'],
 ];
 
 const SP500_EXPORT_COLUMNS: Array<[keyof Sp500TotalReturnRow, string]> = [
@@ -205,8 +189,6 @@ function IdeasPage() {
   const [draftPage, setDraftPage] = useState(String(page));
   const [state, setState] = useState<LoadState<{ ideas: Idea[]; total: number }>>({ status: 'loading' });
   const [copyState, setCopyState] = useState<LoadState<number> | { status: 'idle' }>({ status: 'idle' });
-  const [benchmarkCopyState, setBenchmarkCopyState] =
-    useState<LoadState<number> | { status: 'idle' }>({ status: 'idle' });
   const [sp500CopyState, setSp500CopyState] =
     useState<LoadState<number> | { status: 'idle' }>({ status: 'idle' });
 
@@ -287,21 +269,6 @@ function IdeasPage() {
     }
   }
 
-  async function copyBenchmarkForSheets() {
-    setBenchmarkCopyState({ status: 'loading' });
-
-    try {
-      const rows = await getBenchmarkIndexExport();
-      await writeClipboard(toBenchmarkTsv(rows));
-      setBenchmarkCopyState({ status: 'ready', data: rows.length });
-    } catch (error) {
-      setBenchmarkCopyState({
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Could not copy benchmark',
-      });
-    }
-  }
-
   async function copySp500ForSheets() {
     setSp500CopyState({ status: 'loading' });
 
@@ -365,14 +332,6 @@ function IdeasPage() {
         <button
           className="copy-button secondary"
           type="button"
-          onClick={copyBenchmarkForSheets}
-          disabled={benchmarkCopyState.status === 'loading'}
-        >
-          {benchmarkCopyState.status === 'loading' ? 'Copying...' : 'Copy Benchmark'}
-        </button>
-        <button
-          className="copy-button secondary"
-          type="button"
           onClick={copySp500ForSheets}
           disabled={sp500CopyState.status === 'loading'}
         >
@@ -385,16 +344,6 @@ function IdeasPage() {
       )}
       {copyState.status === 'error' && (
         <div className="copy-status error">Could not copy rows: {copyState.error}</div>
-      )}
-      {benchmarkCopyState.status === 'ready' && (
-        <div className="copy-status">
-          Copied {benchmarkCopyState.data.toLocaleString()} benchmark rows to clipboard.
-        </div>
-      )}
-      {benchmarkCopyState.status === 'error' && (
-        <div className="copy-status error">
-          Could not copy benchmark: {benchmarkCopyState.error}
-        </div>
       )}
       {sp500CopyState.status === 'ready' && (
         <div className="copy-status">
@@ -476,15 +425,6 @@ function toTsv(rows: IdeaExportRow[]) {
   const header = EXPORT_COLUMNS.map(([, label]) => label).join('\t');
   const body = rows.map((row) =>
     EXPORT_COLUMNS.map(([key]) => formatExportValue(key, row[key])).join('\t'),
-  );
-
-  return [header, ...body].join('\n');
-}
-
-function toBenchmarkTsv(rows: BenchmarkIndexRow[]) {
-  const header = BENCHMARK_EXPORT_COLUMNS.map(([, label]) => label).join('\t');
-  const body = rows.map((row) =>
-    BENCHMARK_EXPORT_COLUMNS.map(([key]) => formatExportValue(key, row[key])).join('\t'),
   );
 
   return [header, ...body].join('\n');
@@ -698,7 +638,7 @@ function TotalReturnPanel({ totalReturn }: { totalReturn?: TotalReturn | null })
       </div>
       <dl className="return-facts">
         <div>
-          <dt>Benchmark annual</dt>
+          <dt>S&amp;P 500 TR annual</dt>
           <dd>{formatMaybePercent(totalReturn.benchmark_annualized_return_pct)}</dd>
         </div>
         <div>
@@ -710,7 +650,7 @@ function TotalReturnPanel({ totalReturn }: { totalReturn?: TotalReturn | null })
           <dd>{formatPercent(totalReturn.idea_total_return_pct)}</dd>
         </div>
         <div>
-          <dt>Benchmark total</dt>
+          <dt>S&amp;P 500 TR total</dt>
           <dd>{formatMaybePercent(totalReturn.benchmark_total_return_pct)}</dd>
         </div>
         <div>
@@ -724,10 +664,6 @@ function TotalReturnPanel({ totalReturn }: { totalReturn?: TotalReturn | null })
         <div>
           <dt>Years held</dt>
           <dd>{formatYears(totalReturn.periods_held)}</dd>
-        </div>
-        <div>
-          <dt>Benchmark constituents</dt>
-          <dd>{totalReturn.benchmark_constituents?.toLocaleString() || 'n/a'}</dd>
         </div>
         <div>
           <dt>Start</dt>

@@ -22,7 +22,6 @@ class IdeaTotalReturn(Base):
     benchmark_annualized_return_pct: Mapped[float] = mapped_column(Float, nullable=True)
     excess_total_return_pct: Mapped[float] = mapped_column(Float, nullable=True)
     excess_annualized_return_pct: Mapped[float] = mapped_column(Float, nullable=True)
-    benchmark_constituents: Mapped[int] = mapped_column(Integer, nullable=True)
     periods_held: Mapped[int] = mapped_column(Integer, nullable=False)
     calculation_note: Mapped[str] = mapped_column(String, nullable=False)
     computed_at: Mapped[str] = mapped_column(String, nullable=False)

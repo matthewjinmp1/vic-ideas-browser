@@ -16,7 +16,6 @@ from api.schemas import (
     CatalystsResponse,
     PerformanceResponse,
     IdeaExportRow,
-    BenchmarkIndexRow,
     Sp500TotalReturnRow,
 )
 
@@ -311,9 +310,6 @@ def export_ideas(
                     excess_total_return_pct=(
                         total_return.excess_total_return_pct if total_return else None
                     ),
-                    benchmark_constituents=(
-                        total_return.benchmark_constituents if total_return else None
-                    ),
                     start_period=total_return.start_period if total_return else None,
                     end_period=total_return.end_period if total_return else None,
                     start_price=total_return.start_price if total_return else None,
@@ -329,31 +325,6 @@ def export_ideas(
         return export_rows
     except Exception as e:
         print(f"Error in export_ideas: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
-
-@router.get("/benchmarks/quickfs-index/export", response_model=List[BenchmarkIndexRow])
-def export_quickfs_index(db: Session = Depends(get_db)):
-    """
-    Return the equal-weight QuickFS benchmark index series for spreadsheets.
-    """
-    try:
-        rows = db.execute(
-            text(
-                """
-                SELECT period, index_value, period_return_pct, cumulative_return_pct,
-                       winsorized_index_value, winsorized_period_return_pct,
-                       winsorized_cumulative_return_pct, constituents,
-                       calculation_note, computed_at
-                FROM quickfs_equal_weight_index
-                ORDER BY period
-                """
-            )
-        ).mappings().all()
-
-        return [BenchmarkIndexRow(**row) for row in rows]
-    except Exception as e:
-        print(f"Error in export_quickfs_index: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 

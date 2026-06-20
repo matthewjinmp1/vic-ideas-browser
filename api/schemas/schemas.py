@@ -52,7 +52,6 @@ class TotalReturnResponse(BaseModel):
     benchmark_annualized_return_pct: Optional[float] = None
     excess_total_return_pct: Optional[float] = None
     excess_annualized_return_pct: Optional[float] = None
-    benchmark_constituents: Optional[int] = None
     periods_held: int
     calculation_note: str
     computed_at: str
@@ -78,7 +77,6 @@ class IdeaExportRow(BaseModel):
     benchmark_total_return_pct: Optional[float] = None
     excess_annual_return_pct: Optional[float] = None
     excess_total_return_pct: Optional[float] = None
-    benchmark_constituents: Optional[int] = None
     start_period: Optional[str] = None
     end_period: Optional[str] = None
     start_price: Optional[float] = None
@@ -86,20 +84,6 @@ class IdeaExportRow(BaseModel):
     dividends: Optional[float] = None
     years_held: Optional[float] = None
     vic_link: Optional[str] = None
-
-
-class BenchmarkIndexRow(BaseModel):
-    """Equal-weight QuickFS benchmark index row for spreadsheet export."""
-    period: str
-    index_value: float
-    period_return_pct: float
-    cumulative_return_pct: float
-    winsorized_index_value: float
-    winsorized_period_return_pct: float
-    winsorized_cumulative_return_pct: float
-    constituents: int
-    calculation_note: str
-    computed_at: str
 
 
 class Sp500TotalReturnRow(BaseModel):
