@@ -15,6 +15,7 @@ from api.schemas import (
     DescriptionResponse,
     CatalystsResponse,
     PerformanceResponse,
+    IdeaExportRow,
 )
 
 router = APIRouter()
@@ -232,6 +233,85 @@ def get_ideas_count(
         return {"total": total or 0}
     except Exception as e:
         print(f"Error in get_ideas_count: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.get("/ideas/export", response_model=List[IdeaExportRow])
+def export_ideas(
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Return flattened rows for copying into spreadsheets.
+    """
+    try:
+        query = (
+            db.query(Idea, Company, User, IdeaTotalReturn)
+            .outerjoin(Company, Idea.company_id == Company.ticker)
+            .outerjoin(User, Idea.user_id == User.user_link)
+            .outerjoin(IdeaTotalReturn, Idea.id == IdeaTotalReturn.idea_id)
+        )
+
+        if search:
+            search_term = f"%{search}%"
+            query = (
+                query.outerjoin(Description, Idea.id == Description.idea_id)
+                .filter(
+                    or_(
+                        Idea.company_id.ilike(search_term),
+                        Company.company_name.ilike(search_term),
+                        User.username.ilike(search_term),
+                        Description.description.ilike(search_term),
+                    )
+                )
+            )
+
+        rows = (
+            query.filter(Idea.id.isnot(None))
+            .filter(Idea.company_id.isnot(None))
+            .filter(Idea.user_id.isnot(None))
+            .filter(Idea.date.isnot(None))
+            .order_by(Idea.date.desc())
+            .all()
+        )
+
+        export_rows = []
+        for idea, company, user, total_return in rows:
+            export_rows.append(
+                IdeaExportRow(
+                    idea_id=idea.id,
+                    ticker=idea.company_id,
+                    matched_ticker=total_return.matched_ticker if total_return else None,
+                    company_name=company.company_name if company else None,
+                    date=idea.date,
+                    side="Short" if idea.is_short else "Long",
+                    is_contest_winner=bool(idea.is_contest_winner),
+                    author=user.username if user else None,
+                    author_link=idea.user_id,
+                    annual_idea_return_pct=(
+                        total_return.annualized_idea_return_pct if total_return else None
+                    ),
+                    total_idea_return_pct=(
+                        total_return.idea_total_return_pct if total_return else None
+                    ),
+                    stock_total_return_pct=(
+                        total_return.stock_total_return_pct if total_return else None
+                    ),
+                    start_period=total_return.start_period if total_return else None,
+                    end_period=total_return.end_period if total_return else None,
+                    start_price=total_return.start_price if total_return else None,
+                    end_price=total_return.end_price if total_return else None,
+                    dividends=total_return.dividends if total_return else None,
+                    years_held=(
+                        total_return.periods_held / 4 if total_return else None
+                    ),
+                    vic_link=idea.link or None,
+                )
+            )
+
+        return export_rows
+    except Exception as e:
+        print(f"Error in export_ideas: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 

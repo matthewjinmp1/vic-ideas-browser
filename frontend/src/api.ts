@@ -1,4 +1,4 @@
-import { Idea, IdeaDetail, IdeaListParams } from './types';
+import { Idea, IdeaDetail, IdeaExportRow, IdeaListParams } from './types';
 
 const API_BASE = '/api';
 
@@ -44,4 +44,15 @@ export async function getIdeasCount(searchTerm?: string) {
 
 export async function getIdea(id: string) {
   return request<IdeaDetail>(`/ideas/${encodeURIComponent(id)}`);
+}
+
+export async function getIdeasExport(searchTerm?: string) {
+  const search = new URLSearchParams();
+
+  if (searchTerm) {
+    search.set('search', searchTerm);
+  }
+
+  const suffix = search.toString() ? `?${search.toString()}` : '';
+  return request<IdeaExportRow[]>(`/ideas/export${suffix}`);
 }

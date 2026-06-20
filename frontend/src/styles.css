@@ -151,7 +151,8 @@ button:disabled {
 .search-row button,
 .pager button,
 .open-link,
-.back-button {
+.back-button,
+.copy-button {
   min-height: 42px;
   border: 1px solid #202830;
   border-radius: 6px;
@@ -163,12 +164,14 @@ button:disabled {
 
 .search-row button,
 .pager button,
-.back-button {
+.back-button,
+.copy-button {
   padding: 0 16px;
 }
 
 .list-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -189,6 +192,21 @@ button:disabled {
 .list-toolbar select {
   width: 82px;
   padding: 0 8px;
+}
+
+.copy-button {
+  margin-left: auto;
+}
+
+.copy-status {
+  margin: -2px 0 12px;
+  color: #23512a;
+  font-size: 0.92rem;
+  font-weight: 680;
+}
+
+.copy-status.error {
+  color: #713224;
 }
 
 .idea-list {

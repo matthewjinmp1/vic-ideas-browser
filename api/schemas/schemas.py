@@ -55,6 +55,29 @@ class TotalReturnResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class IdeaExportRow(BaseModel):
+    """Flattened idea row for spreadsheet export."""
+    idea_id: str
+    ticker: str
+    matched_ticker: Optional[str] = None
+    company_name: Optional[str] = None
+    date: datetime
+    side: str
+    is_contest_winner: bool
+    author: Optional[str] = None
+    author_link: str
+    annual_idea_return_pct: Optional[float] = None
+    total_idea_return_pct: Optional[float] = None
+    stock_total_return_pct: Optional[float] = None
+    start_period: Optional[str] = None
+    end_period: Optional[str] = None
+    start_price: Optional[float] = None
+    end_price: Optional[float] = None
+    dividends: Optional[float] = None
+    years_held: Optional[float] = None
+    vic_link: Optional[str] = None
+
+
 class DescriptionResponse(BaseModel):
     """Description of an investment idea."""
     description: str

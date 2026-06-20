@@ -10,6 +10,7 @@ from api.schemas.schemas import (
     UserResponse,
     IdeaResponse,
     IdeaDetailResponse,
+    IdeaExportRow,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "UserResponse",
     "IdeaResponse",
     "IdeaDetailResponse",
+    "IdeaExportRow",
 ]

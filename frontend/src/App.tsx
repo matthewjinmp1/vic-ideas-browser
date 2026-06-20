@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { checkHealth, getIdea, getIdeas, getIdeasCount } from './api';
-import { Idea, IdeaDetail, Performance, TotalReturn } from './types';
+import { checkHealth, getIdea, getIdeas, getIdeasCount, getIdeasExport } from './api';
+import { Idea, IdeaDetail, IdeaExportRow, Performance, TotalReturn } from './types';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 const DEFAULT_PAGE_SIZE = 50;
@@ -61,6 +61,28 @@ function normalizeReportText(text: string) {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+const EXPORT_COLUMNS: Array<[keyof IdeaExportRow, string]> = [
+  ['ticker', 'Ticker'],
+  ['company_name', 'Company Name'],
+  ['date', 'Date'],
+  ['side', 'Long/Short'],
+  ['annual_idea_return_pct', 'Annual Idea Return %'],
+  ['total_idea_return_pct', 'Total Idea Return %'],
+  ['stock_total_return_pct', 'Stock Total Return %'],
+  ['matched_ticker', 'QuickFS Matched Ticker'],
+  ['start_period', 'Start Period'],
+  ['end_period', 'End Period'],
+  ['start_price', 'Start Price'],
+  ['end_price', 'End Price'],
+  ['dividends', 'Dividends'],
+  ['years_held', 'Years Held'],
+  ['author', 'Author'],
+  ['author_link', 'Author Link'],
+  ['is_contest_winner', 'Contest Winner'],
+  ['vic_link', 'VIC Link'],
+  ['idea_id', 'Idea ID'],
+];
 
 function Header() {
   return (
@@ -137,6 +159,7 @@ function IdeasPage() {
   const [draftQuery, setDraftQuery] = useState(query);
   const [draftPage, setDraftPage] = useState(String(page));
   const [state, setState] = useState<LoadState<{ ideas: Idea[]; total: number }>>({ status: 'loading' });
+  const [copyState, setCopyState] = useState<LoadState<number> | { status: 'idle' }>({ status: 'idle' });
 
   const skip = (page - 1) * pageSize;
 
@@ -200,6 +223,21 @@ function IdeasPage() {
     }
   }
 
+  async function copyIdeasForSheets() {
+    setCopyState({ status: 'loading' });
+
+    try {
+      const rows = await getIdeasExport(query || undefined);
+      await writeClipboard(toTsv(rows));
+      setCopyState({ status: 'ready', data: rows.length });
+    } catch (error) {
+      setCopyState({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Could not copy rows',
+      });
+    }
+  }
+
   return (
     <section className="ideas-page">
       <div className="page-heading">
@@ -237,7 +275,22 @@ function IdeasPage() {
             ))}
           </select>
         </label>
+        <button
+          className="copy-button"
+          type="button"
+          onClick={copyIdeasForSheets}
+          disabled={copyState.status === 'loading'}
+        >
+          {copyState.status === 'loading' ? 'Copying...' : 'Copy for Sheets'}
+        </button>
       </div>
+
+      {copyState.status === 'ready' && (
+        <div className="copy-status">Copied {copyState.data.toLocaleString()} rows to clipboard.</div>
+      )}
+      {copyState.status === 'error' && (
+        <div className="copy-status error">Could not copy rows: {copyState.error}</div>
+      )}
 
       {state.status === 'error' ? (
         <div className="notice error">Could not load ideas: {state.error}</div>
@@ -302,6 +355,55 @@ function IdeasPage() {
       </nav>
     </section>
   );
+}
+
+function toTsv(rows: IdeaExportRow[]) {
+  const header = EXPORT_COLUMNS.map(([, label]) => label).join('\t');
+  const body = rows.map((row) =>
+    EXPORT_COLUMNS.map(([key]) => formatExportValue(key, row[key])).join('\t'),
+  );
+
+  return [header, ...body].join('\n');
+}
+
+function formatExportValue(key: keyof IdeaExportRow, value: IdeaExportRow[keyof IdeaExportRow]) {
+  if (value == null) return '';
+
+  if (key === 'date' && typeof value === 'string') {
+    return value.slice(0, 10);
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? String(Math.round(value * 10000) / 10000) : '';
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'TRUE' : 'FALSE';
+  }
+
+  return String(value).replace(/\t/g, ' ').replace(/\r?\n/g, ' ').trim();
+}
+
+async function writeClipboard(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    const copied = document.execCommand('copy');
+    if (!copied) throw new Error('Clipboard copy failed');
+  } finally {
+    document.body.removeChild(textarea);
+  }
 }
 
 function IdeaListRow({ idea }: { idea: Idea }) {

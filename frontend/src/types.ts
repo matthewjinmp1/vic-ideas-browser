@@ -58,6 +58,28 @@ export interface IdeaDetail extends Idea {
   catalysts?: { catalysts: string } | null;
 }
 
+export interface IdeaExportRow {
+  idea_id: string;
+  ticker: string;
+  matched_ticker: string | null;
+  company_name: string | null;
+  date: string;
+  side: 'Long' | 'Short';
+  is_contest_winner: boolean;
+  author: string | null;
+  author_link: string;
+  annual_idea_return_pct: number | null;
+  total_idea_return_pct: number | null;
+  stock_total_return_pct: number | null;
+  start_period: string | null;
+  end_period: string | null;
+  start_price: number | null;
+  end_price: number | null;
+  dividends: number | null;
+  years_held: number | null;
+  vic_link: string | null;
+}
+
 export interface IdeaListParams {
   skip: number;
   limit: number;
