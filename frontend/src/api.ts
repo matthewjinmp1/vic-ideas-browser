@@ -1,4 +1,4 @@
-import { Idea, IdeaDetail, IdeaExportRow, IdeaListParams } from './types';
+import { BenchmarkIndexRow, Idea, IdeaDetail, IdeaExportRow, IdeaListParams } from './types';
 
 const API_BASE = '/api';
 
@@ -55,4 +55,8 @@ export async function getIdeasExport(searchTerm?: string) {
 
   const suffix = search.toString() ? `?${search.toString()}` : '';
   return request<IdeaExportRow[]>(`/ideas/export${suffix}`);
+}
+
+export async function getBenchmarkIndexExport() {
+  return request<BenchmarkIndexRow[]>('/benchmarks/quickfs-index/export');
 }

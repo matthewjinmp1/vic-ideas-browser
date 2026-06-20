@@ -90,6 +90,19 @@ export interface IdeaExportRow {
   vic_link: string | null;
 }
 
+export interface BenchmarkIndexRow {
+  period: string;
+  index_value: number;
+  period_return_pct: number;
+  cumulative_return_pct: number;
+  winsorized_index_value: number;
+  winsorized_period_return_pct: number;
+  winsorized_cumulative_return_pct: number;
+  constituents: number;
+  calculation_note: string;
+  computed_at: string;
+}
+
 export interface IdeaListParams {
   skip: number;
   limit: number;

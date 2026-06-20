@@ -198,6 +198,13 @@ button:disabled {
   margin-left: auto;
 }
 
+.copy-button.secondary {
+  margin-left: 0;
+  border-color: #cbc4b6;
+  background: #fffdf8;
+  color: #202830;
+}
+
 .copy-status {
   margin: -2px 0 12px;
   color: #23512a;

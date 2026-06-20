@@ -88,6 +88,20 @@ class IdeaExportRow(BaseModel):
     vic_link: Optional[str] = None
 
 
+class BenchmarkIndexRow(BaseModel):
+    """Equal-weight QuickFS benchmark index row for spreadsheet export."""
+    period: str
+    index_value: float
+    period_return_pct: float
+    cumulative_return_pct: float
+    winsorized_index_value: float
+    winsorized_period_return_pct: float
+    winsorized_cumulative_return_pct: float
+    constituents: int
+    calculation_note: str
+    computed_at: str
+
+
 class DescriptionResponse(BaseModel):
     """Description of an investment idea."""
     description: str

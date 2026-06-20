@@ -2,7 +2,7 @@
 Routes for investment ideas in the ValueInvestorsClub API.
 """
 from fastapi import APIRouter, HTTPException, Query, Depends
-from sqlalchemy import func, or_, and_
+from sqlalchemy import func, or_, and_, text
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import date
@@ -16,6 +16,7 @@ from api.schemas import (
     CatalystsResponse,
     PerformanceResponse,
     IdeaExportRow,
+    BenchmarkIndexRow,
 )
 
 router = APIRouter()
@@ -327,6 +328,31 @@ def export_ideas(
         return export_rows
     except Exception as e:
         print(f"Error in export_ideas: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.get("/benchmarks/quickfs-index/export", response_model=List[BenchmarkIndexRow])
+def export_quickfs_index(db: Session = Depends(get_db)):
+    """
+    Return the equal-weight QuickFS benchmark index series for spreadsheets.
+    """
+    try:
+        rows = db.execute(
+            text(
+                """
+                SELECT period, index_value, period_return_pct, cumulative_return_pct,
+                       winsorized_index_value, winsorized_period_return_pct,
+                       winsorized_cumulative_return_pct, constituents,
+                       calculation_note, computed_at
+                FROM quickfs_equal_weight_index
+                ORDER BY period
+                """
+            )
+        ).mappings().all()
+
+        return [BenchmarkIndexRow(**row) for row in rows]
+    except Exception as e:
+        print(f"Error in export_quickfs_index: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 

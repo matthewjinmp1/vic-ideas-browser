@@ -92,6 +92,23 @@ def ensure_tables(conn):
         )
         """
     )
+    conn.execute("DROP TABLE IF EXISTS quickfs_equal_weight_index")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS quickfs_equal_weight_index (
+            period TEXT NOT NULL PRIMARY KEY,
+            index_value REAL NOT NULL,
+            period_return_pct REAL NOT NULL,
+            cumulative_return_pct REAL NOT NULL,
+            winsorized_index_value REAL NOT NULL,
+            winsorized_period_return_pct REAL NOT NULL,
+            winsorized_cumulative_return_pct REAL NOT NULL,
+            constituents INTEGER NOT NULL,
+            calculation_note TEXT NOT NULL,
+            computed_at TEXT NOT NULL
+        )
+        """
+    )
 
     total_return_columns = {
         row[1] for row in conn.execute("PRAGMA table_info(idea_total_returns)").fetchall()
@@ -113,6 +130,53 @@ def ensure_tables(conn):
     )
 
 
+def build_index_rows(quickfs, computed_at):
+    returns_by_period = {}
+
+    for periods, prices, dividend_prefix in quickfs.values():
+        for index in range(1, len(periods)):
+            previous_price = prices[index - 1]
+            current_price = prices[index]
+            dividend = dividend_prefix[index + 1] - dividend_prefix[index]
+            period_return = ((current_price + dividend) / previous_price - 1) * 100
+            returns_by_period.setdefault(periods[index], []).append(period_return)
+
+    note = (
+        "Equal-weight index from consecutive local QuickFS stock observations; "
+        "period return averages stocks with data ending in that period."
+    )
+    index_value = 100.0
+    winsorized_index_value = 100.0
+    rows = []
+
+    for period in sorted(returns_by_period):
+        period_returns = returns_by_period[period]
+        period_return = sum(period_returns) / len(period_returns)
+        sorted_returns = sorted(period_returns)
+        lower = sorted_returns[int((len(sorted_returns) - 1) * 0.01)]
+        upper = sorted_returns[int((len(sorted_returns) - 1) * 0.99)]
+        winsorized_returns = [min(max(value, lower), upper) for value in period_returns]
+        winsorized_period_return = sum(winsorized_returns) / len(winsorized_returns)
+        index_value *= 1 + period_return / 100
+        winsorized_index_value *= 1 + winsorized_period_return / 100
+        rows.append(
+            (
+                period,
+                index_value,
+                period_return,
+                index_value - 100,
+                winsorized_index_value,
+                winsorized_period_return,
+                winsorized_index_value - 100,
+                len(period_returns),
+                note,
+                computed_at,
+            )
+        )
+
+    return rows
+
+
 def main():
     args = parse_args()
     quickfs = load_quickfs_series(args.quickfs_db)
@@ -131,6 +195,19 @@ def main():
     ).fetchall()
 
     computed_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    index_rows = build_index_rows(quickfs, computed_at)
+    conn.executemany(
+        """
+        INSERT INTO quickfs_equal_weight_index (
+            period, index_value, period_return_pct, cumulative_return_pct,
+            winsorized_index_value, winsorized_period_return_pct,
+            winsorized_cumulative_return_pct, constituents, calculation_note, computed_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        index_rows,
+    )
+
     note = (
         "Equal-weight benchmark from all local QuickFS stocks with usable price "
         "and dividend data over the same start/end period."
@@ -223,6 +300,7 @@ def main():
     conn.close()
 
     print(f"quickfs_tickers={len(quickfs)}")
+    print(f"index_periods={len(index_rows)}")
     print(f"benchmark_windows={len(windows)}")
     print(f"benchmarks_computed={len(benchmark_rows)}")
     print(f"ideas_updated={len(updates)}")

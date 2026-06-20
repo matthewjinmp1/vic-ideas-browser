@@ -1,7 +1,14 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { checkHealth, getIdea, getIdeas, getIdeasCount, getIdeasExport } from './api';
-import { Idea, IdeaDetail, IdeaExportRow, Performance, TotalReturn } from './types';
+import {
+  checkHealth,
+  getBenchmarkIndexExport,
+  getIdea,
+  getIdeas,
+  getIdeasCount,
+  getIdeasExport,
+} from './api';
+import { BenchmarkIndexRow, Idea, IdeaDetail, IdeaExportRow, Performance, TotalReturn } from './types';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 const DEFAULT_PAGE_SIZE = 50;
@@ -89,6 +96,19 @@ const EXPORT_COLUMNS: Array<[keyof IdeaExportRow, string]> = [
   ['idea_id', 'Idea ID'],
 ];
 
+const BENCHMARK_EXPORT_COLUMNS: Array<[keyof BenchmarkIndexRow, string]> = [
+  ['period', 'Period'],
+  ['index_value', 'Index Value'],
+  ['period_return_pct', 'Period Return %'],
+  ['cumulative_return_pct', 'Cumulative Return %'],
+  ['winsorized_index_value', 'Winsorized Index Value'],
+  ['winsorized_period_return_pct', 'Winsorized Period Return %'],
+  ['winsorized_cumulative_return_pct', 'Winsorized Cumulative Return %'],
+  ['constituents', 'Constituents'],
+  ['computed_at', 'Computed At'],
+  ['calculation_note', 'Calculation Note'],
+];
+
 function Header() {
   return (
     <header className="shell-header">
@@ -165,6 +185,8 @@ function IdeasPage() {
   const [draftPage, setDraftPage] = useState(String(page));
   const [state, setState] = useState<LoadState<{ ideas: Idea[]; total: number }>>({ status: 'loading' });
   const [copyState, setCopyState] = useState<LoadState<number> | { status: 'idle' }>({ status: 'idle' });
+  const [benchmarkCopyState, setBenchmarkCopyState] =
+    useState<LoadState<number> | { status: 'idle' }>({ status: 'idle' });
 
   const skip = (page - 1) * pageSize;
 
@@ -243,6 +265,21 @@ function IdeasPage() {
     }
   }
 
+  async function copyBenchmarkForSheets() {
+    setBenchmarkCopyState({ status: 'loading' });
+
+    try {
+      const rows = await getBenchmarkIndexExport();
+      await writeClipboard(toBenchmarkTsv(rows));
+      setBenchmarkCopyState({ status: 'ready', data: rows.length });
+    } catch (error) {
+      setBenchmarkCopyState({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Could not copy benchmark',
+      });
+    }
+  }
+
   return (
     <section className="ideas-page">
       <div className="page-heading">
@@ -288,6 +325,14 @@ function IdeasPage() {
         >
           {copyState.status === 'loading' ? 'Copying...' : 'Copy for Sheets'}
         </button>
+        <button
+          className="copy-button secondary"
+          type="button"
+          onClick={copyBenchmarkForSheets}
+          disabled={benchmarkCopyState.status === 'loading'}
+        >
+          {benchmarkCopyState.status === 'loading' ? 'Copying...' : 'Copy Benchmark'}
+        </button>
       </div>
 
       {copyState.status === 'ready' && (
@@ -295,6 +340,16 @@ function IdeasPage() {
       )}
       {copyState.status === 'error' && (
         <div className="copy-status error">Could not copy rows: {copyState.error}</div>
+      )}
+      {benchmarkCopyState.status === 'ready' && (
+        <div className="copy-status">
+          Copied {benchmarkCopyState.data.toLocaleString()} benchmark rows to clipboard.
+        </div>
+      )}
+      {benchmarkCopyState.status === 'error' && (
+        <div className="copy-status error">
+          Could not copy benchmark: {benchmarkCopyState.error}
+        </div>
       )}
 
       {state.status === 'error' ? (
@@ -371,7 +426,16 @@ function toTsv(rows: IdeaExportRow[]) {
   return [header, ...body].join('\n');
 }
 
-function formatExportValue(key: keyof IdeaExportRow, value: IdeaExportRow[keyof IdeaExportRow]) {
+function toBenchmarkTsv(rows: BenchmarkIndexRow[]) {
+  const header = BENCHMARK_EXPORT_COLUMNS.map(([, label]) => label).join('\t');
+  const body = rows.map((row) =>
+    BENCHMARK_EXPORT_COLUMNS.map(([key]) => formatExportValue(key, row[key])).join('\t'),
+  );
+
+  return [header, ...body].join('\n');
+}
+
+function formatExportValue(key: string, value: unknown) {
   if (value == null) return '';
 
   if (key === 'date' && typeof value === 'string') {
