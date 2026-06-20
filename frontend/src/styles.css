@@ -278,12 +278,58 @@ button:disabled {
   font-size: 0.92rem;
 }
 
+.idea-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .open-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 76px;
   padding: 0 14px;
+}
+
+.return-pill {
+  display: grid;
+  min-width: 112px;
+  gap: 1px;
+  padding: 8px 10px;
+  border: 1px solid #ddd8ce;
+  border-radius: 6px;
+  background: #f7f2e8;
+  text-align: right;
+}
+
+.return-pill span {
+  color: #6f685c;
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.return-pill strong {
+  color: #12191f;
+  font-size: 1rem;
+}
+
+.return-pill.positive strong,
+.return-hero strong.positive {
+  color: #1f6b34;
+}
+
+.return-pill.negative strong,
+.return-hero strong.negative {
+  color: #9c3324;
+}
+
+.return-pill.empty {
+  place-items: center;
+  min-height: 54px;
+  color: #8a8274;
+  font-weight: 760;
 }
 
 .pager {
@@ -427,6 +473,10 @@ button:disabled {
   margin-top: 28px;
 }
 
+.detail-side h2:not(:first-child) {
+  margin-top: 24px;
+}
+
 .readable-text {
   white-space: normal;
   overflow-wrap: anywhere;
@@ -464,6 +514,64 @@ button:disabled {
   font-weight: 760;
 }
 
+.return-panel {
+  padding: 16px;
+  border: 1px solid #ddd8ce;
+  border-radius: 8px;
+  background: #fffdf8;
+}
+
+.return-hero {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e6e0d6;
+}
+
+.return-hero span,
+.return-facts dt,
+.return-note {
+  color: #6f685c;
+}
+
+.return-hero span,
+.return-facts dt {
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.return-hero strong {
+  color: #12191f;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.return-facts {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+
+.return-facts div {
+  display: grid;
+  gap: 2px;
+}
+
+.return-facts dt,
+.return-facts dd {
+  margin: 0;
+}
+
+.return-facts dd {
+  color: #12191f;
+  font-weight: 720;
+}
+
+.return-note {
+  margin: 14px 0 0;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 820px) {
   .shell-header {
     align-items: flex-start;
@@ -483,6 +591,10 @@ button:disabled {
 
   .idea-row {
     grid-template-columns: 1fr;
+  }
+
+  .idea-actions {
+    justify-content: space-between;
   }
 
   .open-link {

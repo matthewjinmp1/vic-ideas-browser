@@ -22,6 +22,22 @@ export interface Performance {
   fiveYearPerf: number | null;
 }
 
+export interface TotalReturn {
+  idea_id: string;
+  ticker: string;
+  matched_ticker: string;
+  start_period: string;
+  end_period: string;
+  start_price: number;
+  end_price: number;
+  dividends: number;
+  stock_total_return_pct: number;
+  idea_total_return_pct: number;
+  periods_held: number;
+  calculation_note: string;
+  computed_at: string;
+}
+
 export interface Idea {
   id: string;
   link: string;
@@ -33,6 +49,7 @@ export interface Idea {
   company?: Company | null;
   user?: User | null;
   performance?: Performance | null;
+  total_return?: TotalReturn | null;
 }
 
 export interface IdeaDetail extends Idea {

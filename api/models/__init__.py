@@ -9,6 +9,7 @@ from ValueInvestorsClub.ValueInvestorsClub.models.Description import Description
 from ValueInvestorsClub.ValueInvestorsClub.models.User import User
 from ValueInvestorsClub.ValueInvestorsClub.models.Catalysts import Catalysts
 from ValueInvestorsClub.ValueInvestorsClub.models.Performance import Performance
+from api.models.total_return import IdeaTotalReturn
 
 __all__ = [
     "Base",
@@ -18,4 +19,5 @@ __all__ = [
     "User",
     "Catalysts",
     "Performance",
+    "IdeaTotalReturn",
 ]

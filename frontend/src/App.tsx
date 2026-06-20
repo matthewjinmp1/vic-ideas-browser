@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { checkHealth, getIdea, getIdeas, getIdeasCount } from './api';
-import { Idea, IdeaDetail, Performance } from './types';
+import { Idea, IdeaDetail, Performance, TotalReturn } from './types';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 const DEFAULT_PAGE_SIZE = 50;
@@ -323,9 +323,12 @@ function IdeaListRow({ idea }: { idea: Idea }) {
           <span>{idea.user?.username || idea.user_id}</span>
         </div>
       </div>
-      <Link to={`/ideas/${idea.id}`} className="open-link" aria-label={`Open ${ideaTitle(idea)}`}>
-        Open
-      </Link>
+      <div className="idea-actions">
+        <ReturnPill totalReturn={idea.total_return} />
+        <Link to={`/ideas/${idea.id}`} className="open-link" aria-label={`Open ${ideaTitle(idea)}`}>
+          Open
+        </Link>
+      </div>
     </article>
   );
 }
@@ -404,6 +407,9 @@ function IdeaDetailPage() {
         </section>
 
         <aside className="detail-side">
+          <h2>QuickFS total return</h2>
+          <TotalReturnPanel totalReturn={idea.total_return} />
+
           <h2>Performance</h2>
           <PerformanceTable performance={idea.performance} isShort={idea.is_short} />
         </aside>
@@ -420,6 +426,66 @@ function ReadableText({ text, empty }: { text?: string; empty: string }) {
   }
 
   return <div className="readable-text">{normalizedText}</div>;
+}
+
+function ReturnPill({ totalReturn }: { totalReturn?: TotalReturn | null }) {
+  if (!totalReturn) {
+    return <div className="return-pill empty">n/a</div>;
+  }
+
+  const value = totalReturn.idea_total_return_pct;
+  const className = value >= 0 ? 'positive' : 'negative';
+
+  return (
+    <div className={`return-pill ${className}`}>
+      <span>Return</span>
+      <strong>{formatPercent(value)}</strong>
+    </div>
+  );
+}
+
+function TotalReturnPanel({ totalReturn }: { totalReturn?: TotalReturn | null }) {
+  if (!totalReturn) {
+    return (
+      <div className="return-panel">
+        <p className="empty-copy">No QuickFS match for this idea ticker.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="return-panel">
+      <div className="return-hero">
+        <span>Idea return</span>
+        <strong className={totalReturn.idea_total_return_pct >= 0 ? 'positive' : 'negative'}>
+          {formatPercent(totalReturn.idea_total_return_pct)}
+        </strong>
+      </div>
+      <dl className="return-facts">
+        <div>
+          <dt>Stock return</dt>
+          <dd>{formatPercent(totalReturn.stock_total_return_pct)}</dd>
+        </div>
+        <div>
+          <dt>Start</dt>
+          <dd>
+            {totalReturn.start_period} at {formatMoney(totalReturn.start_price)}
+          </dd>
+        </div>
+        <div>
+          <dt>End</dt>
+          <dd>
+            {totalReturn.end_period} at {formatMoney(totalReturn.end_price)}
+          </dd>
+        </div>
+        <div>
+          <dt>Dividends</dt>
+          <dd>{formatMoney(totalReturn.dividends)}</dd>
+        </div>
+      </dl>
+      <p className="return-note">{totalReturn.calculation_note}</p>
+    </div>
+  );
 }
 
 function PerformanceTable({ performance, isShort }: { performance?: Performance | null; isShort: boolean }) {
@@ -459,8 +525,20 @@ function PerformanceTable({ performance, isShort }: { performance?: Performance 
 function formatPerformance(value: number | null | undefined, isShort: boolean) {
   if (value == null) return 'n/a';
   const adjusted = isShort ? -value : value;
-  const sign = adjusted > 0 ? '+' : '';
-  return `${sign}${adjusted.toFixed(1)}%`;
+  return formatPercent(adjusted);
+}
+
+function formatPercent(value: number) {
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(1)}%`;
+}
+
+function formatMoney(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: value >= 100 ? 2 : 3,
+  }).format(value);
 }
 
 export default App;

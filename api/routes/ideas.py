@@ -8,7 +8,7 @@ from typing import List, Optional
 from datetime import date
 
 from api.database import get_db
-from api.models import Idea, Description, Catalysts, Performance, Company, User
+from api.models import Idea, Description, Catalysts, Performance, Company, User, IdeaTotalReturn
 from api.schemas import (
     IdeaResponse,
     IdeaDetailResponse,
@@ -18,6 +18,22 @@ from api.schemas import (
 )
 
 router = APIRouter()
+
+
+def attach_total_returns(db: Session, ideas: list[Idea]) -> None:
+    idea_ids = [idea.id for idea in ideas if idea.id]
+    if not idea_ids:
+        return
+
+    returns = (
+        db.query(IdeaTotalReturn)
+        .filter(IdeaTotalReturn.idea_id.in_(idea_ids))
+        .all()
+    )
+    returns_by_idea = {row.idea_id: row for row in returns}
+
+    for idea in ideas:
+        idea.total_return = returns_by_idea.get(idea.id)
 
 
 @router.get("/ideas/", response_model=List[IdeaResponse])
@@ -163,6 +179,7 @@ def get_ideas(
                 query = query.order_by(Idea.date.desc())
         
         ideas = query.offset(skip).limit(limit).all()
+        attach_total_returns(db, ideas)
         
         # Create a list of valid response objects
         result = []
@@ -248,6 +265,9 @@ def get_idea_detail(idea_id: str, db: Session = Depends(get_db)):
         description = db.query(Description).filter(Description.idea_id == idea_id).first()
         catalysts = db.query(Catalysts).filter(Catalysts.idea_id == idea_id).first()
         
+        total_return = db.query(IdeaTotalReturn).filter(IdeaTotalReturn.idea_id == idea_id).first()
+        idea.total_return = total_return
+
         # Create base response from idea
         result = IdeaDetailResponse.model_validate(idea)
         

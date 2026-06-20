@@ -35,6 +35,25 @@ class PerformanceResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TotalReturnResponse(BaseModel):
+    """Approximate total return calculated from local QuickFS quarter-end data."""
+    idea_id: str
+    ticker: str
+    matched_ticker: str
+    start_period: str
+    end_period: str
+    start_price: float
+    end_price: float
+    dividends: float
+    stock_total_return_pct: float
+    idea_total_return_pct: float
+    periods_held: int
+    calculation_note: str
+    computed_at: str
+
+    model_config = {"from_attributes": True}
+
+
 class DescriptionResponse(BaseModel):
     """Description of an investment idea."""
     description: str
@@ -77,6 +96,7 @@ class IdeaResponse(BaseModel):
     company: Optional[CompanyResponse] = None
     user: Optional[UserResponse] = None
     performance: Optional[PerformanceResponse] = None
+    total_return: Optional[TotalReturnResponse] = None
 
     model_config = {"from_attributes": True}
 
@@ -88,5 +108,6 @@ class IdeaDetailResponse(IdeaResponse):
     description: Optional[DescriptionResponse] = None
     catalysts: Optional[CatalystsResponse] = None
     performance: Optional[PerformanceResponse] = None
+    total_return: Optional[TotalReturnResponse] = None
 
     model_config = {"from_attributes": True}
