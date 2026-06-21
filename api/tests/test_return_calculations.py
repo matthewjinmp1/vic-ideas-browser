@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts import calculate_sp500_benchmark
+from scripts import calculate_forward_beats
 from scripts import calculate_total_returns
 from scripts import import_quickfs_latest_metrics
 from scripts.calculate_sp500_benchmark import (
@@ -366,6 +367,125 @@ class ReturnPipelineTests(unittest.TestCase):
             self.assertEqual(rows["ABC"][3], "2025-06")
             self.assertIsNone(rows["NOREV"][2])
             self.assertIsNone(rows["NOREV"][3])
+
+    def test_forward_beat_summary_uses_requested_window_and_time_weights(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vic_db = self.make_db_path(directory, "vic.sqlite")
+            quickfs_db = self.make_db_path(directory, "quickfs.sqlite")
+
+            vic = sqlite3.connect(vic_db)
+            vic.execute(
+                """
+                CREATE TABLE ideas (
+                    id TEXT PRIMARY KEY,
+                    company_id TEXT,
+                    date TEXT,
+                    is_short INTEGER,
+                    is_contest_winner INTEGER
+                )
+                """
+            )
+            vic.executemany(
+                """
+                INSERT INTO ideas (
+                    id, company_id, date, is_short, is_contest_winner
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                [
+                    ("long-full-year", "AAA", "2020-03-10", 0, 1),
+                    ("long-half-year", "BBB", "2020-03-10", 0, 0),
+                    ("short-full-year", "CCC", "2020-03-10", 1, 1),
+                ],
+            )
+            vic.execute(
+                """
+                CREATE TABLE sp500_total_return_index (
+                    period TEXT PRIMARY KEY,
+                    index_value REAL
+                )
+                """
+            )
+            vic.executemany(
+                "INSERT INTO sp500_total_return_index (period, index_value) VALUES (?, ?)",
+                [
+                    ("2020-03", 100),
+                    ("2020-06", 102),
+                    ("2020-09", 104),
+                    ("2020-12", 106),
+                    ("2021-03", 110),
+                ],
+            )
+            vic.commit()
+            vic.close()
+
+            quickfs = sqlite3.connect(quickfs_db)
+            quickfs.execute(
+                """
+                CREATE TABLE financials (
+                    ticker TEXT,
+                    company_name TEXT,
+                    exchange TEXT,
+                    data_json TEXT,
+                    updated_at TEXT
+                )
+                """
+            )
+            self.insert_quickfs_row(
+                quickfs,
+                "AAA",
+                ["2020-03", "2020-06", "2020-09", "2020-12", "2021-03"],
+                [100, 105, 110, 115, 121],
+                [0, 0, 0, 0, 0],
+            )
+            self.insert_quickfs_row(
+                quickfs,
+                "BBB",
+                ["2020-03", "2020-06", "2020-09"],
+                [100, 103, 110],
+                [0, 0, 0],
+            )
+            self.insert_quickfs_row(
+                quickfs,
+                "CCC",
+                ["2020-03", "2020-06", "2020-09", "2020-12", "2021-03"],
+                [100, 95, 94, 93, 90],
+                [0, 0, 0, 0, 0],
+            )
+            quickfs.commit()
+            quickfs.close()
+
+            summary = calculate_forward_beats.calculate_forward_beat_summary(
+                vic_db,
+                quickfs_db,
+                forward_quarters=4,
+            )
+
+            long_group = summary["groups"][("All ideas", "Long")]
+            short_group = summary["groups"][("All ideas", "Short")]
+            winner_long = summary["groups"][("Contest winners", "Long")]
+            winner_short = summary["groups"][("Contest winners", "Short")]
+
+            aaa_beat = 21 - 10
+            bbb_idea_annual = ((1.10 ** 2) - 1) * 100
+            bbb_benchmark_annual = ((1.04 ** 2) - 1) * 100
+            bbb_beat = bbb_idea_annual - bbb_benchmark_annual
+            weighted_long = ((aaa_beat * 1) + (bbb_beat * 0.5)) / 1.5
+
+            self.assertEqual(long_group["total_ideas"], 2)
+            self.assertEqual(long_group["with_beat"], 2)
+            self.assert_close(long_group["avg_years_used"], 0.75)
+            self.assert_close(long_group["time_weighted_annual_beat_pct"], weighted_long)
+
+            self.assertEqual(short_group["total_ideas"], 1)
+            self.assertEqual(short_group["with_beat"], 1)
+            self.assert_close(short_group["time_weighted_annual_beat_pct"], 0)
+
+            self.assertEqual(winner_long["total_ideas"], 1)
+            self.assertEqual(winner_long["with_beat"], 1)
+            self.assert_close(winner_long["time_weighted_annual_beat_pct"], aaa_beat)
+            self.assertEqual(winner_short["total_ideas"], 1)
+            self.assertEqual(winner_short["with_beat"], 1)
 
 
 if __name__ == "__main__":
