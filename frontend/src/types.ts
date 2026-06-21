@@ -72,6 +72,8 @@ export interface IdeaExportRow {
   is_contest_winner: boolean;
   author: string | null;
   author_link: string;
+  latest_revenue: number | null;
+  latest_revenue_period: string | null;
   annual_idea_return_pct: number | null;
   total_idea_return_pct: number | null;
   stock_total_return_pct: number | null;

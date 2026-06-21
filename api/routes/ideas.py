@@ -2,7 +2,7 @@
 Routes for investment ideas in the ValueInvestorsClub API.
 """
 from fastapi import APIRouter, HTTPException, Query, Depends
-from sqlalchemy import func, or_, and_, text
+from sqlalchemy import bindparam, func, or_, and_, text
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import date
@@ -20,6 +20,60 @@ from api.schemas import (
 )
 
 router = APIRouter()
+
+
+def normalize_ticker(ticker: Optional[str]) -> str:
+    return (ticker or "").strip().upper()
+
+
+def candidate_tickers(ticker: Optional[str]) -> list[str]:
+    normalized = normalize_ticker(ticker)
+    candidates = [normalized]
+
+    if "." in normalized:
+        candidates.append(normalized.replace(".", "-"))
+    if "-" in normalized:
+        candidates.append(normalized.replace("-", "."))
+    if "/" in normalized:
+        candidates.extend(part.strip() for part in normalized.split("/") if part.strip())
+
+    seen = set()
+    result = []
+    for candidate in candidates:
+        if candidate and candidate not in seen:
+            seen.add(candidate)
+            result.append(candidate)
+    return result
+
+
+def load_latest_metrics(db: Session, tickers: set[str]) -> dict[str, dict]:
+    candidates = set()
+    for ticker in tickers:
+        candidates.update(candidate_tickers(ticker))
+
+    if not candidates:
+        return {}
+
+    rows = db.execute(
+        text(
+            """
+            SELECT ticker, latest_revenue, latest_revenue_period
+            FROM quickfs_latest_metrics
+            WHERE ticker IN :tickers
+            """
+        ).bindparams(bindparam("tickers", expanding=True)),
+        {"tickers": tuple(candidates)},
+    ).mappings().all()
+
+    return {row["ticker"]: row for row in rows}
+
+
+def find_latest_metrics(metrics_by_ticker: dict[str, dict], *tickers: Optional[str]) -> Optional[dict]:
+    for ticker in tickers:
+        for candidate in candidate_tickers(ticker):
+            if candidate in metrics_by_ticker:
+                return metrics_by_ticker[candidate]
+    return None
 
 
 def attach_total_returns(db: Session, ideas: list[Idea]) -> None:
@@ -239,8 +293,20 @@ def export_ideas(
             .all()
         )
 
+        metric_tickers = set()
+        for idea, _, _, total_return in rows:
+            metric_tickers.add(idea.company_id)
+            if total_return:
+                metric_tickers.add(total_return.matched_ticker)
+        metrics_by_ticker = load_latest_metrics(db, metric_tickers)
+
         export_rows = []
         for idea, company, user, total_return in rows:
+            metrics = find_latest_metrics(
+                metrics_by_ticker,
+                total_return.matched_ticker if total_return else None,
+                idea.company_id,
+            )
             export_rows.append(
                 IdeaExportRow(
                     idea_id=idea.id,
@@ -252,6 +318,10 @@ def export_ideas(
                     is_contest_winner=bool(idea.is_contest_winner),
                     author=user.username if user else None,
                     author_link=idea.user_id,
+                    latest_revenue=metrics["latest_revenue"] if metrics else None,
+                    latest_revenue_period=(
+                        metrics["latest_revenue_period"] if metrics else None
+                    ),
                     annual_idea_return_pct=(
                         total_return.annualized_idea_return_pct if total_return else None
                     ),

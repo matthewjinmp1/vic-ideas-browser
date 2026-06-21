@@ -81,6 +81,8 @@ const EXPORT_COLUMNS: Array<[keyof IdeaExportRow, string]> = [
   ['company_name', 'Company Name'],
   ['date', 'Date'],
   ['side', 'Long/Short'],
+  ['latest_revenue', 'Latest Revenue'],
+  ['latest_revenue_period', 'Latest Revenue Period'],
   ['annual_idea_return_pct', 'Annual Idea Return %'],
   ['benchmark_annual_return_pct', 'S&P 500 TR Annual Return %'],
   ['excess_annual_return_pct', 'Excess Annual Return %'],

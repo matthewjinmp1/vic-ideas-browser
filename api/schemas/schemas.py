@@ -70,6 +70,8 @@ class IdeaExportRow(BaseModel):
     is_contest_winner: bool
     author: Optional[str] = None
     author_link: str
+    latest_revenue: Optional[float] = None
+    latest_revenue_period: Optional[str] = None
     annual_idea_return_pct: Optional[float] = None
     total_idea_return_pct: Optional[float] = None
     stock_total_return_pct: Optional[float] = None
